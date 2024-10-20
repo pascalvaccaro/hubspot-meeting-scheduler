@@ -11,8 +11,8 @@ const paramSchema = z.object({
 export default defineEventHandler(async (event) => {
   const {
     hubspotMeetingSchedulerToken,
+    public: { hubspotApiDomain }
   } = useRuntimeConfig(event)
-  const { hubspot: { apiDomain } } = useAppConfig()
 
   const params = await getValidatedRouterParams(event, paramSchema.safeParse)
   const query = await getValidatedQuery(event, querySchema.safeParse)
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const url = new URL(
     `/scheduler/v3/meetings/meeting-links/book/${encodeURIComponent(slug)}`,
-    apiDomain,
+    hubspotApiDomain,
   )
   url.searchParams.set(
     'timezone',

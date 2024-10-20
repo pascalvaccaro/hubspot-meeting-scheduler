@@ -3,32 +3,32 @@ import type { HubspotMeeting } from "../../../../types"
 
 export default defineEventHandler(async (event) => {
   const {
-    hubspotMeetingSchedulerToken
-  } = useRuntimeConfig(event)
-  const {
-    hubspot: {
-      apiDomain,
-      meetingScheduler
+    hubspotMeetingSchedulerToken,
+    public: {
+      hubspotApiDomain,
+      meetingSchedulerName,
+      meetingSchedulerOrganizerId,
+      meetingSchedulerType,
     }
-  } = useAppConfig()
+  } = useRuntimeConfig(event)
 
   const querySchema = z.object({
-    name: z.string().default(meetingScheduler.name),
-    organizerId: z.string().default(meetingScheduler.organizerId),
-    type: z.string().default(meetingScheduler.type)
+    name: z.string().default(meetingSchedulerName),
+    organizerId: z.string().default(meetingSchedulerOrganizerId),
+    type: z.string().default(meetingSchedulerType)
   })
-  const query = await getValidatedQuery(event, querySchema.safeParse)
-  if (!query.success) throw query.error.issues
-
-  const url = new URL('/scheduler/v3/meetings/meeting-links', apiDomain)
-  for (const [key, value] of Object.entries(query.data)) {
-    url.searchParams.set(key, value)
-  }
+  const { success, error, data: query } =
+    await getValidatedQuery(event, querySchema.safeParse)
+  if (!success) throw error.issues
 
   const response = await $fetch<{
     total: number
     results: HubspotMeeting[]
-  }>(url.toString(), {
+  }>(new URL(
+    '/scheduler/v3/meetings/meeting-links',
+    hubspotApiDomain
+  ).toString(), {
+    query,
     headers: {
       Authorization: `Bearer ${hubspotMeetingSchedulerToken}`,
     },
