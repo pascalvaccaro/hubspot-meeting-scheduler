@@ -1,48 +1,62 @@
-# Nuxt Layer Starter
+# Nuxt Layer - Hubspot Meeting Scheduler
 
-Create Nuxt extendable layer with this GitHub template.
+Nuxt Layer for the [Hubspot Meeting Scheduler API](https://developers.hubspot.com/docs/api/library/meetings)
 
-## Setup
+> ⚠️ This API in in BETA, it may change in the future ⚠️
 
-Make sure to install the dependencies:
+## Usage
+
+### Environment
+
+```bash
+# Your Hubspot Meeting Scheduler API token (private)
+HUBSPOT_MEETING_SCHEDULER_TOKEN=
+
+# The following variables can be overriden from the component properties
+# The name of your meeting workspace (public)
+HUBSPOT_MEETING_SCHEDULER_NAME=
+# The ID of your meeting organizer (public)
+HUBSPOT_MEETING_SCHEDULER_ORGANIZER_ID=
+```
+
+### Configuration
+
+Fill in your `nuxt.config.ts` file
+
+```typescript
+export default defineNuxtConfig({
+  extends: ["github:pascalvaccaro/hubspot-meeting-scheduler"],
+  runtimeConfig: {
+    hubspotMeetingSchedulerToken:
+      process.env.HUBSPOT_MEETING_SCHEDULER_TOKEN || "",
+    public: {
+      hubspotApiDomain:
+        process.env.HUBSPOT_API_DOMAIN || "https://api.hubspot.com",
+      meetingSchedulerName: process.env.HUBSPOT_MEETING_SCHEDULER_NAME || "",
+      meetingSchedulerOrganizerId:
+        process.env.HUBSPOT_MEETING_SCHEDULER_ORGANIZER_ID || "",
+      meetingSchedulerType:
+        process.env.HUBSPOT_MEETING_SCHEDULER_TYPE || "ROUND_ROBIN_CALENDAR",
+    },
+  },
+});
+```
+
+## [HubspotMeetingScheduler](./components/HubspotMeetingScheduler.vue)
+
+TODO
+
+## Contribute
+
+### Setup
+
+Fork this repository and make sure to install the dependencies:
 
 ```bash
 pnpm install
 ```
 
-## Working on your layer
-
-Your layer is at the root of this repository, it is exactly like a regular Nuxt project, except you can publish it on NPM.
-
-The `.playground` directory should help you on trying your layer during development.
-
-Running `pnpm dev` will prepare and boot `.playground` directory, which imports your layer itself.
-
-## Distributing your layer
-
-Your Nuxt layer is shaped exactly the same as any other Nuxt project, except you can publish it on NPM.
-
-To do so, you only have to check if `files` in `package.json` are valid, then run:
-
-```bash
-npm publish --access public
-```
-
-Once done, your users will only have to run:
-
-```bash
-npm install --save your-layer
-```
-
-Then add the dependency to their `extends` in `nuxt.config`:
-
-```ts
-defineNuxtConfig({
-  extends: 'your-layer'
-})
-```
-
-## Development Server
+### Development Server
 
 Start the development server on http://localhost:3000
 
@@ -50,7 +64,7 @@ Start the development server on http://localhost:3000
 pnpm dev
 ```
 
-## Production
+### Production
 
 Build the application for production:
 
