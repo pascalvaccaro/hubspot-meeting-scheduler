@@ -11,7 +11,7 @@ const paramSchema = z.object({
 export default defineEventHandler(async (event) => {
   const {
     hubspotMeetingSchedulerToken,
-    public: { hubspotApiDomain }
+    public: { hubspotApiDomain },
   } = useRuntimeConfig(event)
 
   const params = await getValidatedRouterParams(event, paramSchema.safeParse)
@@ -22,20 +22,15 @@ export default defineEventHandler(async (event) => {
   const { slug } = params.data
   const { timezone } = query.data
 
-  const url = new URL(
-    `/scheduler/v3/meetings/meeting-links/book/${encodeURIComponent(slug)}`,
-    hubspotApiDomain,
+  const response = await $fetch<HubspotMeetingLink>(
+    new URL(`/scheduler/v3/meetings/meeting-links/book/${encodeURIComponent(slug)}`, hubspotApiDomain).toString(),
+    {
+      query: { timezone: decodeURIComponent(timezone) },
+      headers: {
+        Authorization: `Bearer ${hubspotMeetingSchedulerToken}`,
+      },
+    }
   )
-  url.searchParams.set(
-    'timezone',
-    decodeURIComponent(timezone),
-  )
-
-  const response = await $fetch<HubspotMeetingLink>(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${hubspotMeetingSchedulerToken}`,
-    },
-  })
 
   return response
 })

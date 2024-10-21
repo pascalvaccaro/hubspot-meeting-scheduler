@@ -1,15 +1,18 @@
-<script setup lang="ts" generic="
-  CustomFormValues extends Record<string, string | number | boolean>
-  = Record<string, string | number | boolean>
-">
-import type { ZodIssue } from 'zod';
+<script
+  setup
+  lang="ts"
+  generic="
+    CustomFormValues extends Record<string, string | number | boolean> = Record<string, string | number | boolean>
+  "
+>
+import type { ZodIssue } from 'zod'
 import type {
   CreateBooking,
   CustomFormField,
   HubspotMeeting,
   HubspotMeetingBookSuccess,
-  HubspotMeetingLink
-} from '../types';
+  HubspotMeetingLink,
+} from '../types'
 
 const {
   canCancel = true,
@@ -58,78 +61,69 @@ const emits = defineEmits<{
 
 defineSlots<{
   'custom-fields'(values: {
-    fields: Array<CustomFormField & {
-      value?: string | number | boolean
-    }>
-    handleChangeField: (
-      name: string,
-      value?: string | number | boolean | null
-    ) => void
+    fields: Array<
+      CustomFormField & {
+        value?: string | number | boolean
+      }
+    >
+    handleChangeField: (name: string, value?: string | number | boolean | null) => void
   }): unknown
-  'date-picker'(values: {
-    date?: string
-    handleSelectDate: (v: string) => void
-  }): unknown
+  'date-picker'(values: { date?: string; handleSelectDate: (v: string) => void }): unknown
   'identity-fields'(values: {
     email: string
     firstName: string
     lastName: string
-    handleChangeIdentity: (
-      field: 'email' | 'firstName' | 'lastName',
-      value: string
-    ) => void
+    handleChangeIdentity: (field: 'email' | 'firstName' | 'lastName', value: string) => void
   }): unknown
   'meeting-actions'(values: {
     formValues: CreateBooking
-    handleSubmitMeeting: (
-      v: CreateBooking
-    ) => Promise<HubspotMeetingBookSuccess | null>
+    handleSubmitMeeting: (v: CreateBooking) => Promise<HubspotMeetingBookSuccess | null>
   }): unknown
   'meeting-selector'(values: {
     meeting?: HubspotMeeting
     handleSelectMeeting: (v: HubspotMeeting) => void | Promise<void>
   }): unknown
-  'time-picker'(values: {
-    time?: number
-    handleSelectTime: (v: number) => void
-  }): unknown
-  'timezone-selector'(values: {
-    timezone: string
-    handleSelectTimezone: (v: string) => void
-  }): unknown
+  'time-picker'(values: { time?: number; handleSelectTime: (v: number) => void }): unknown
+  'timezone-selector'(values: { timezone: string; handleSelectTimezone: (v: string) => void }): unknown
 }>()
 
 const now = new Date().getTime()
 
 const selectedTimezone = defineModel<string>('timezone', {
-  default: () => 'Europe/Paris'
+  default: () => 'Europe/Paris',
 })
-const dateFormatter = computed(() => new Intl.DateTimeFormat(locale, {
-  year: 'numeric',
-  month: 'numeric',
-  day: 'numeric',
-  timeZone: selectedTimezone.value,
-}))
-const timeFormatter = computed(() => new Intl.DateTimeFormat(locale, {
-  hour: 'numeric',
-  minute: 'numeric',
-  timeZone: selectedTimezone.value,
-  // timeZoneName: 'short',
-}))
+const dateFormatter = computed(
+  () =>
+    new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      timeZone: selectedTimezone.value,
+    })
+)
+const timeFormatter = computed(
+  () =>
+    new Intl.DateTimeFormat(locale, {
+      hour: 'numeric',
+      minute: 'numeric',
+      timeZone: selectedTimezone.value,
+      // timeZoneName: 'short',
+    })
+)
 
 const { data: meetingLinks } = useFetch('/api/hubspot/meetings', {
-  query: { name: meetingName, organizerId, type: meetingType }
+  query: { name: meetingName, organizerId, type: meetingType },
 })
 
 const selectedMeeting = ref<HubspotMeeting | undefined>(meetingLinks.value?.[0])
 const selectedDate = defineModel<string>('date', {
-  default: () => ''
+  default: () => '',
 })
 const selectedDuration = defineModel<number>('duration', {
-  default: () => 900000
+  default: () => 900000,
 })
 const selectedTime = defineModel<number>('time', {
-  default: () => new Date().getTime()
+  default: () => new Date().getTime(),
 })
 const email = ref<string>(userInfos?.email ?? '')
 const firstName = ref<string>(userInfos?.firstName ?? '')
@@ -149,43 +143,38 @@ const formValues = reactive({
 const { data: meeting } = useFetch<HubspotMeetingLink>(`/api/hubspot/meetings/${selectedMeeting.value?.slug}`, {
   query: { timezone: selectedTimezone.value },
   immediate: !!selectedMeeting.value,
-  watch: [selectedMeeting, selectedTimezone]
+  watch: [selectedMeeting, selectedTimezone],
 })
 
-const canSelectMeeting = computed(() =>
-  meetingLinks.value && meetingLinks.value.length > 1
+const canSelectMeeting = computed(() => meetingLinks.value && meetingLinks.value.length > 1)
+const availabilities = computed(() =>
+  (meeting.value?.linkAvailability.linkAvailabilityByDuration[selectedDuration.value.toString()].availabilities ?? [])
+    .filter((c) => c.startMillisUtc > now)
+    .reduce(
+      (acc, c) => {
+        const date = new Date(c.startMillisUtc)
+        const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+        return {
+          ...acc,
+          [day]: [...(acc[day] ?? []), c.startMillisUtc],
+        }
+      },
+      {} as Record<number, number[]>
+    )
 )
-const availabilities = computed(() => (
-  meeting.value?.linkAvailability
-    .linkAvailabilityByDuration[selectedDuration.value.toString()]
-    .availabilities ?? [])
-  .filter((c) => c.startMillisUtc > now)
-  .reduce((acc, c) => {
-    const date = new Date(c.startMillisUtc)
-    const day = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
-    ).getTime()
-    return {
-      ...acc,
-      [day]: [...(acc[day] ?? []), c.startMillisUtc]
-    }
-  }, {} as Record<number, number[]>)
+const customFormFields = computed(() =>
+  (meeting.value?.customParams.formFields ?? []).map((field) => ({
+    ...field,
+    value: customFormValues?.[field.name],
+  }))
 )
-const customFormFields = computed(() => (
-  meeting.value?.customParams.formFields ?? []
-).map((field) => ({
-  ...field,
-  value: customFormValues?.[field.name],
-})))
-const isValid = computed(() =>
-  Object.values(formValues).every(Boolean) &&
-  Object.values(customFormFields)
-    .filter(c => c.isRequired)
-    .every(c => Boolean(c.value))
+const isValid = computed(
+  () =>
+    Object.values(formValues).every(Boolean) &&
+    Object.values(customFormFields)
+      .filter((c) => c.isRequired)
+      .every((c) => Boolean(c.value))
 )
-
 
 const getCustomFieldAttrs = (field: CustomFormField) => {
   switch (field.fieldType) {
@@ -193,7 +182,7 @@ const getCustomFieldAttrs = (field: CustomFormField) => {
       return { is: 'input', type: 'tel' }
     case 'booleancheckbox':
     case 'checkbox':
-      return { is: 'input', type: 'checkbox'}
+      return { is: 'input', type: 'checkbox' }
     case 'select':
     case 'textarea':
       return { is: field.fieldType }
@@ -214,10 +203,7 @@ const onTimeSelect = (time: number) => {
   emits('on-datetime-select', time)
   selectedTime.value = time
 }
-const onChangeIdentity = (
-  field: 'email' | 'firstName' | 'lastName',
-  value: string
-) => {
+const onChangeIdentity = (field: 'email' | 'firstName' | 'lastName', value: string) => {
   switch (field) {
     case 'email':
       email.value = value
@@ -230,12 +216,9 @@ const onChangeIdentity = (
       break
   }
 }
-const onChangeCustomField = (
-  name: string,
-  value?: string | number | boolean | null
-) => {
+const onChangeCustomField = (name: string, value?: string | number | boolean | null) => {
   if (formValues.formFields?.[name]) {
-    (formValues.formFields as Record<string, unknown>)[name] = value
+    ;(formValues.formFields as Record<string, unknown>)[name] = value
   }
 }
 const bookMeeting = async () => {
@@ -260,11 +243,7 @@ defineExpose({
 <template>
   <div :class="['hubspot_container', $attrs.class]">
     <div v-if="canSelectMeeting" class="hubspot_container__meeting-selector">
-      <slot
-        name="meeting-selector"
-        :meeting="selectedMeeting"
-        :handle-change-meeting="onMeetingSelect"
-      >
+      <slot name="meeting-selector" :meeting="selectedMeeting" :handle-change-meeting="onMeetingSelect">
         <ul>
           <li
             v-for="link in meetingLinks"
@@ -279,17 +258,10 @@ defineExpose({
     </div>
 
     <div class="hubspot_container__timezone-selector">
-      <slot
-        name="timezone-selector"
-        :timezone="selectedTimezone"
-        :handle-select-timezone="onTimezoneSelect"
-      >
+      <slot name="timezone-selector" :timezone="selectedTimezone" :handle-select-timezone="onTimezoneSelect">
         <label for="timezone">
           <p>{{ labels?.timezone ?? 'Timezone' }}</p>
-          <select
-            v-model="selectedTimezone"
-            name="timezone"
-          >
+          <select v-model="selectedTimezone" name="timezone">
             <option v-for="tz in timezones" :key="tz" :value="tz">
               {{ tz }}
             </option>
@@ -299,11 +271,7 @@ defineExpose({
     </div>
 
     <div class="hubspot_container__date-picker">
-      <slot
-        name="date-picker"
-        :date="selectedDate"
-        :handle-select-date="onDateSelect"
-      >
+      <slot name="date-picker" :date="selectedDate" :handle-select-date="onDateSelect">
         <ul>
           <li
             v-for="day in Object.keys(availabilities)"
@@ -318,11 +286,7 @@ defineExpose({
     </div>
 
     <div class="hubspot_container__time-picker">
-      <slot
-        name="time-picker"
-        :time="selectedTime"
-        :handle-select-time="onTimeSelect"
-      >
+      <slot name="time-picker" :time="selectedTime" :handle-select-time="onTimeSelect">
         <ul>
           <li
             v-for="timeSlot in availabilities[Number(selectedDate)]"
@@ -347,32 +311,24 @@ defineExpose({
         <fieldset>
           <label for="firstName">
             <p>{{ labels?.firstName ?? 'First name' }}</p>
-            <input v-model="firstName" name="firstName">
+            <input v-model="firstName" name="firstName" />
           </label>
           <label for="lastName">
             <p>{{ labels?.lastName ?? 'Last name' }}</p>
-            <input v-model="lastName" name="lastName">
+            <input v-model="lastName" name="lastName" />
           </label>
           <label for="email">
             <p>{{ labels?.email ?? 'Email' }}</p>
-            <input v-model="email" name="email" type="email">
+            <input v-model="email" name="email" type="email" />
           </label>
         </fieldset>
       </slot>
     </div>
 
     <div v-if="customFormValues" class="hubspot_container__custom-fields">
-      <slot
-        name="custom-fields"
-        :fields="customFormFields"
-        :handle-change-field="onChangeCustomField"
-      >
+      <slot name="custom-fields" :fields="customFormFields" :handle-change-field="onChangeCustomField">
         <fieldset>
-          <label
-            v-for="field in customFormFields"
-            :key="field.name"
-            :for="field.name"
-          >
+          <label v-for="field in customFormFields" :key="field.name" :for="field.name">
             <p>{{ field.label }}</p>
             <component
               :is="getCustomFieldAttrs(field).is"
@@ -380,10 +336,7 @@ defineExpose({
               :value="field.value"
               :required="!!field.isRequired"
               :type="getCustomFieldAttrs(field).type"
-              @change="onChangeCustomField(
-                field.name,
-                ($event.target as HTMLInputElement)?.value
-              )"
+              @change="onChangeCustomField(field.name, ($event.target as HTMLInputElement)?.value)"
             />
           </label>
         </fieldset>
@@ -391,26 +344,12 @@ defineExpose({
     </div>
 
     <div class="hubspot_container__meeting-actions">
-      <slot
-        name="meeting-actions"
-        :form-values="formValues"
-        :handle-submit-meeting="bookMeeting"
-      >
-        <button
-          v-if="canCancel"
-          class="hubspot_container__cancel-btn"
-          type="button"
-          @click="$emit('on-cancel')"
-        >
-          {{ labels?.cancel ?? 'Cancel'}}
+      <slot name="meeting-actions" :form-values="formValues" :handle-submit-meeting="bookMeeting">
+        <button v-if="canCancel" class="hubspot_container__cancel-btn" type="button" @click="$emit('on-cancel')">
+          {{ labels?.cancel ?? 'Cancel' }}
         </button>
-        <button
-          class="hubspot_container__submit-btn"
-          type="button"
-          :disabled="!isValid"
-          @click="bookMeeting"
-        >
-          {{ labels?.submit ?? 'Book meeting'}}
+        <button class="hubspot_container__submit-btn" type="button" :disabled="!isValid" @click="bookMeeting">
+          {{ labels?.submit ?? 'Book meeting' }}
         </button>
       </slot>
     </div>
@@ -425,10 +364,10 @@ defineExpose({
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto;
   grid-template-areas:
-  "meeting timezone"
-  "day time"
-  "identity custom"
-  "action action";
+    'meeting timezone'
+    'day time'
+    'identity custom'
+    'action action';
   gap: 1rem 0.5rem;
   padding: 1rem 2rem;
 }
@@ -509,16 +448,17 @@ defineExpose({
   border-width: 1px;
   font-size: 1rem;
 }
-.hubspot_container input:focus, .hubspot_container input:active {
+.hubspot_container input:focus,
+.hubspot_container input:active {
   border-color: lightblue;
 }
 .hubspot_container label p {
   margin: 0;
 }
 .hubspot_container__timezone-selector select {
-  -moz-appearance:none; /* Firefox */
-  -webkit-appearance:none; /* Safari and Chrome */
-  appearance:none;
+  -moz-appearance: none; /* Firefox */
+  -webkit-appearance: none; /* Safari and Chrome */
+  appearance: none;
   padding: 0.75rem 0.5rem;
 }
 

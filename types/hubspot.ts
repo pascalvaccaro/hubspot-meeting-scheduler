@@ -66,10 +66,7 @@ export interface HubspotMeetingLink {
   linkAvailability: LinkAvailability
 }
 
-export type HubspotMeetingAvailabilities = Pick<
-  HubspotMeetingLink,
-  'allUsersBusyTimes' | 'linkAvailability'
->
+export type HubspotMeetingAvailabilities = Pick<HubspotMeetingLink, 'allUsersBusyTimes' | 'linkAvailability'>
 
 export type HubspotMeetingBookSuccess = {
   calendarEventId: string

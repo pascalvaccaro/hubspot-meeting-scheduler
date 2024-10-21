@@ -22,20 +22,18 @@ export default defineEventHandler(async (event) => {
   const { slug } = params.data
   const { timezone } = query.data
 
-  const url = new URL(
-    `/scheduler/v3/meetings/meeting-links/book/availability-page/${encodeURIComponent(slug)}`,
-    hubspotApiDomain,
+  const response = await $fetch<HubspotMeetingAvailabilities>(
+    new URL(
+      `/scheduler/v3/meetings/meeting-links/book/availability-page/${encodeURIComponent(slug)}`,
+      hubspotApiDomain
+    ).toString(),
+    {
+      query: { timezone: decodeURIComponent(timezone) },
+      headers: {
+        Authorization: `Bearer ${hubspotMeetingSchedulerToken}`,
+      },
+    }
   )
-  url.searchParams.set(
-    'timezone',
-    decodeURIComponent(timezone),
-  )
-
-  const response = await $fetch<HubspotMeetingAvailabilities>(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${hubspotMeetingSchedulerToken}`,
-    },
-  })
 
   return response.linkAvailability
 })
