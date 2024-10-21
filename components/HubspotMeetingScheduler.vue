@@ -5,6 +5,8 @@
     CustomFormValues extends Record<string, string | number | boolean> = Record<string, string | number | boolean>
   "
 >
+import { watch } from 'vue'
+import { useHubspotMeetingScheduler, type MeetingSchedulerProps } from '../composables/useHubspotMeetingScheduler'
 import type { ZodIssue } from 'zod'
 import type {
   CreateBooking,
@@ -13,7 +15,6 @@ import type {
   HubspotMeetingBookSuccess,
   HubspotMeetingLink,
 } from '../types'
-import { useHubspotMeetingScheduler, type MeetingSchedulerProps } from '../composables/useHubspotMeetingScheduler'
 
 const {
   canCancel = true,
