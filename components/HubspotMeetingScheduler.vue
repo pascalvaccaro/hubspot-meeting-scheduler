@@ -69,6 +69,7 @@ defineSlots<{
     handleChangeField: (name: string, value?: string | number | boolean | null) => void
   }): unknown
   'date-picker'(values: { date?: string; handleSelectDate: (v: string) => void }): unknown
+  'duration-selector'(values: { duration?: number; handleSelectDuration: (v: number) => void }): unknown
   'identity-fields'(values: {
     email: string
     firstName: string
@@ -95,9 +96,7 @@ const selectedTimezone = defineModel<string>('timezone', {
 const dateFormatter = computed(
   () =>
     new Intl.DateTimeFormat(locale, {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
+      dateStyle: 'long',
       timeZone: selectedTimezone.value,
     })
 )
@@ -107,7 +106,6 @@ const timeFormatter = computed(
       hour: 'numeric',
       minute: 'numeric',
       timeZone: selectedTimezone.value,
-      // timeZoneName: 'short',
     })
 )
 
@@ -120,7 +118,7 @@ const selectedDate = defineModel<string>('date', {
   default: () => '',
 })
 const selectedDuration = defineModel<number>('duration', {
-  default: () => 900000,
+  default: () => 1800000,
 })
 const selectedTime = defineModel<number>('time', {
   default: () => new Date().getTime(),
@@ -141,14 +139,17 @@ const formValues = reactive({
 })
 
 const { data: meeting } = useFetch<HubspotMeetingLink>(`/api/hubspot/meetings/${selectedMeeting.value?.slug}`, {
-  query: { timezone: selectedTimezone.value },
   immediate: !!selectedMeeting.value,
+  query: { timezone: selectedTimezone.value },
   watch: [selectedMeeting, selectedTimezone],
 })
 
 const canSelectMeeting = computed(() => meetingLinks.value && meetingLinks.value.length > 1)
+const availableDurations = computed(() => 
+  Object.keys(meeting.value?.linkAvailability.linkAvailabilityByDuration ?? {}).map(Number)
+)
 const availabilities = computed(() =>
-  (meeting.value?.linkAvailability.linkAvailabilityByDuration[selectedDuration.value.toString()].availabilities ?? [])
+  (meeting.value?.linkAvailability.linkAvailabilityByDuration[selectedDuration.value.toString()]?.availabilities ?? [])
     .filter((c) => c.startMillisUtc > now)
     .reduce(
       (acc, c) => {
@@ -193,6 +194,9 @@ const getCustomFieldAttrs = (field: CustomFormField) => {
 const onMeetingSelect = (meeting: HubspotMeeting) => {
   selectedMeeting.value = meeting
 }
+const onDurationSelect = (duration: number) => {
+  selectedDuration.value = duration
+}
 const onTimezoneSelect = (timezone: string) => {
   selectedTimezone.value = timezone
 }
@@ -233,6 +237,14 @@ const bookMeeting = async () => {
   }
 }
 
+watch(availabilities, (newVal) => {
+  if (selectedDate.value) return
+  const [firstAvailability] = Object.keys(newVal)
+  if (firstAvailability) {
+    selectedDate.value = firstAvailability
+  }
+})
+
 defineExpose({
   bookMeeting,
   formValues,
@@ -267,6 +279,21 @@ defineExpose({
             </option>
           </select>
         </label>
+      </slot>
+    </div>
+
+    <div class="hubspot_container__duration-selector">
+      <slot name="duration-selector" :duration="selectedDuration" :handle-select-duration="onDurationSelect">
+        <ul>
+          <li
+            v-for="duration in availableDurations"
+            :key="duration"
+            :class="{ active: duration === selectedDuration }"
+            @click="onDurationSelect(duration)"
+          >
+            {{ duration / 60000 }} minutes
+          </li>
+        </ul>
       </slot>
     </div>
 
@@ -311,21 +338,21 @@ defineExpose({
         <fieldset>
           <label for="firstName">
             <p>{{ labels?.firstName ?? 'First name' }}</p>
-            <input v-model="firstName" name="firstName" />
+            <input v-model="firstName" name="firstName" >
           </label>
           <label for="lastName">
             <p>{{ labels?.lastName ?? 'Last name' }}</p>
-            <input v-model="lastName" name="lastName" />
+            <input v-model="lastName" name="lastName" >
           </label>
           <label for="email">
             <p>{{ labels?.email ?? 'Email' }}</p>
-            <input v-model="email" name="email" type="email" />
+            <input v-model="email" name="email" type="email" >
           </label>
         </fieldset>
       </slot>
     </div>
 
-    <div v-if="customFormValues" class="hubspot_container__custom-fields">
+    <div v-if="customFormFields.length" class="hubspot_container__custom-fields">
       <slot name="custom-fields" :fields="customFormFields" :handle-change-field="onChangeCustomField">
         <fieldset>
           <label v-for="field in customFormFields" :key="field.name" :for="field.name">
