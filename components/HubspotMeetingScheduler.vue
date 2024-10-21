@@ -22,23 +22,25 @@ const {
   locale = 'en',
   timezones = Intl.supportedValuesOf('timeZone'),
   ...props
-} = defineProps<MeetingSchedulerProps<CustomFormValues> & {
-  canCancel?: boolean
-  dateFormat?: string
-  labels?: {
-    cancel?: string
-    email?: string
-    firstName?: string
-    lastName?: string
-    selectDay?: string
-    selectMeeting?: string
-    selectTime?: string
-    submit?: string
-    timezone?: string
+} = defineProps<
+  MeetingSchedulerProps<CustomFormValues> & {
+    canCancel?: boolean
+    dateFormat?: string
+    labels?: {
+      cancel?: string
+      email?: string
+      firstName?: string
+      lastName?: string
+      selectDay?: string
+      selectMeeting?: string
+      selectTime?: string
+      submit?: string
+      timezone?: string
+    }
+    locale?: string
+    timezones?: string[]
   }
-  locale?: string
-  timezones?: string[]
-}>()
+>()
 
 const emits = defineEmits<{
   'on-booking-error': [ZodIssue[]]
@@ -96,18 +98,18 @@ const {
   selectedDate,
 } = useHubspotMeetingScheduler<CustomFormValues>(props)
 
-const formatDate = (date: string) => 
+const formatDate = (date: string) =>
   new Intl.DateTimeFormat(locale, {
     dateStyle: 'long',
     timeZone: formValues.timezone,
   }).format(Number(date))
 
-const formatTime = (time: number) => 
+const formatTime = (time: number) =>
   new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     minute: 'numeric',
     timeZone: formValues.timezone,
-    timeZoneName: 'short'
+    timeZoneName: 'short',
   }).format(time)
 
 const handleMeetingSelect = (meeting: HubspotMeeting) => {
@@ -151,8 +153,8 @@ defineExpose({
 
 <template>
   <div :class="['hubspot-meeting-scheduler', $attrs.class]">
-    <div v-if="canSelectMeeting" class="hubspot-meeting-scheduler__meeting-selector">
-      <slot name="meeting-selector" :meeting="meeting" :handle-change-meeting="onMeetingSelect">
+    <slot name="meeting-selector" :meeting="meeting" :handle-change-meeting="onMeetingSelect">
+      <div v-if="canSelectMeeting" class="hubspot-meeting-scheduler__meeting-selector">
         <ul>
           <li
             v-for="link in meetingLinks"
@@ -163,24 +165,28 @@ defineExpose({
             {{ link.name }}
           </li>
         </ul>
-      </slot>
-    </div>
+      </div>
+    </slot>
 
-    <div class="hubspot-meeting-scheduler__timezone-selector">
-      <slot name="timezone-selector" :timezone="formValues.timezone" :handle-select-timezone="onTimezoneSelect">
+    <slot name="timezone-selector" :timezone="formValues.timezone" :handle-select-timezone="onTimezoneSelect">
+      <div class="hubspot-meeting-scheduler__timezone-selector">
         <label for="timezone">
           <p>{{ labels?.timezone ?? 'Timezone' }}</p>
-          <select name="timezone" :value="formValues.timezone" @change="onTimezoneSelect(($event.target as HTMLSelectElement).value)">
+          <select
+            name="timezone"
+            :value="formValues.timezone"
+            @change="onTimezoneSelect(($event.target as HTMLSelectElement).value)"
+          >
             <option v-for="tz in timezones" :key="tz" :value="tz" :selected="tz === formValues.timezone">
               {{ tz }}
             </option>
           </select>
         </label>
-      </slot>
-    </div>
+      </div>
+    </slot>
 
-    <div class="hubspot-meeting-scheduler__duration-selector">
-      <slot name="duration-selector" :duration="formValues.duration" :handle-select-duration="onDurationSelect">
+    <slot name="duration-selector" :duration="formValues.duration" :handle-select-duration="onDurationSelect">
+      <div class="hubspot-meeting-scheduler__duration-selector">
         <ul>
           <li
             v-for="duration in availableDurations"
@@ -191,11 +197,11 @@ defineExpose({
             {{ duration / 60000 }} minutes
           </li>
         </ul>
-      </slot>
-    </div>
+      </div>
+    </slot>
 
-    <div class="hubspot-meeting-scheduler__date-picker">
-      <slot name="date-picker" :date="selectedDate" :handle-select-date="onDateSelect">
+    <slot name="date-picker" :date="selectedDate" :handle-select-date="onDateSelect">
+      <div class="hubspot-meeting-scheduler__date-picker">
         <ul>
           <li
             v-for="day in Object.keys(availabilities)"
@@ -206,11 +212,11 @@ defineExpose({
             {{ formatDate(day) }}
           </li>
         </ul>
-      </slot>
-    </div>
+      </div>
+    </slot>
 
-    <div class="hubspot-meeting-scheduler__time-picker">
-      <slot name="time-picker" :time="formValues.startTime" :handle-select-time="handleTimeSelect">
+    <slot name="time-picker" :time="formValues.startTime" :handle-select-time="handleTimeSelect">
+      <div class="hubspot-meeting-scheduler__time-picker">
         <ul>
           <li
             v-for="timeSlot in availabilities[Number(selectedDate)]"
@@ -221,30 +227,43 @@ defineExpose({
             {{ formatTime(timeSlot) }}
           </li>
         </ul>
-      </slot>
-    </div>
+      </div>
+    </slot>
 
-    <div class="hubspot-meeting-scheduler__form-fields">
-      <slot
-        name="form-fields"
-        :email="formValues.email"
-        :first-name="formValues.firstName"
-        :last-name="formValues.lastName"
-        :custom-fields="customFormFields"
-        :handle-change-form-field="onChangeFormField"
-      >
+    <slot
+      name="form-fields"
+      :email="formValues.email"
+      :first-name="formValues.firstName"
+      :last-name="formValues.lastName"
+      :custom-fields="customFormFields"
+      :handle-change-form-field="onChangeFormField"
+    >
+      <div class="hubspot-meeting-scheduler__form-fields">
         <fieldset>
           <label for="firstName">
             <p>{{ labels?.firstName ?? 'First name' }}</p>
-            <input name="firstName" :value="formValues.firstName" @change="onChangeFormField('firstName', ($event.target as HTMLInputElement).value)">
+            <input
+              name="firstName"
+              :value="formValues.firstName"
+              @change="onChangeFormField('firstName', ($event.target as HTMLInputElement).value)"
+            />
           </label>
           <label for="lastName">
             <p>{{ labels?.lastName ?? 'Last name' }}</p>
-            <input name="lastName" :value="formValues.lastName" @change="onChangeFormField('lastName', ($event.target as HTMLInputElement).value)">
+            <input
+              name="lastName"
+              :value="formValues.lastName"
+              @change="onChangeFormField('lastName', ($event.target as HTMLInputElement).value)"
+            />
           </label>
           <label for="email">
             <p>{{ labels?.email ?? 'Email' }}</p>
-            <input name="email" type="email" :value="formValues.email" @change="onChangeFormField('email', ($event.target as HTMLInputElement).value)">
+            <input
+              name="email"
+              type="email"
+              :value="formValues.email"
+              @change="onChangeFormField('email', ($event.target as HTMLInputElement).value)"
+            />
           </label>
           <template v-if="formValues.formFields">
             <label v-for="field in customFormFields" :key="field.name" :for="field.name">
@@ -260,18 +279,28 @@ defineExpose({
             </label>
           </template>
         </fieldset>
-      </slot>
-    </div>
+      </div>
+    </slot>
 
-    <div class="hubspot-meeting-scheduler__meeting-actions">
-      <slot name="meeting-actions" :form-values="formValues" :handle-submit-meeting="bookMeeting">
-        <button v-if="canCancel" class="hubspot-meeting-scheduler__cancel-btn" type="button" @click="$emit('on-cancel')">
+    <slot name="meeting-actions" :form-values="formValues" :handle-submit-meeting="bookMeeting">
+      <div class="hubspot-meeting-scheduler__meeting-actions">
+        <button
+          v-if="canCancel"
+          class="hubspot-meeting-scheduler__cancel-btn"
+          type="button"
+          @click="$emit('on-cancel')"
+        >
           {{ labels?.cancel ?? 'Cancel' }}
         </button>
-        <button class="hubspot-meeting-scheduler__submit-btn" type="button" :disabled="!isValid" @click="() => bookMeeting()">
+        <button
+          class="hubspot-meeting-scheduler__submit-btn"
+          type="button"
+          :disabled="!isValid"
+          @click="() => bookMeeting()"
+        >
           {{ labels?.submit ?? 'Book meeting' }}
         </button>
-      </slot>
-    </div>
+      </div>
+    </slot>
   </div>
 </template>
