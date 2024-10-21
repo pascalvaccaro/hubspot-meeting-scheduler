@@ -1,8 +1,14 @@
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
+const currentDir = dirname(fileURLToPath(import.meta.url))
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   typescript: {
     typeCheck: true,
   },
+  css: [join(currentDir, './assets/css/main.css')],
   runtimeConfig: {
     hubspotMeetingSchedulerToken: process.env.HUBSPOT_MEETING_SCHEDULER_TOKEN || '',
     public: {
