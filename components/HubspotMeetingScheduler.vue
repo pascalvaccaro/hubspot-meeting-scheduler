@@ -152,7 +152,7 @@ defineExpose({
 </script>
 
 <template>
-  <div :class="['hubspot-meeting-scheduler', $attrs.class]">
+  <div :class="$attrs.class || 'hubspot-meeting-scheduler'">
     <slot name="meeting-selector" :meeting="meeting" :handle-change-meeting="onMeetingSelect">
       <div v-if="canSelectMeeting" class="hubspot-meeting-scheduler__meeting-selector">
         <ul>
@@ -246,7 +246,7 @@ defineExpose({
               name="firstName"
               :value="formValues.firstName"
               @change="onChangeFormField('firstName', ($event.target as HTMLInputElement).value)"
-            />
+            >
           </label>
           <label for="lastName">
             <p>{{ labels?.lastName ?? 'Last name' }}</p>
@@ -254,7 +254,7 @@ defineExpose({
               name="lastName"
               :value="formValues.lastName"
               @change="onChangeFormField('lastName', ($event.target as HTMLInputElement).value)"
-            />
+            >
           </label>
           <label for="email">
             <p>{{ labels?.email ?? 'Email' }}</p>
@@ -263,7 +263,7 @@ defineExpose({
               type="email"
               :value="formValues.email"
               @change="onChangeFormField('email', ($event.target as HTMLInputElement).value)"
-            />
+            >
           </label>
           <template v-if="formValues.formFields">
             <label v-for="field in customFormFields" :key="field.name" :for="field.name">
