@@ -43,7 +43,7 @@ export const useHubspotMeetingScheduler = <
   })
   const customFormFields = computed(() => meeting.value?.customParams.formFields ?? [])
 
-  const formValues = reactive<CreateBooking>({
+  const formValues = reactive<CreateBooking<CustomFormValues>>({
     duration: 1800000,
     email: userInfos?.email ?? '',
     firstName: userInfos?.firstName ?? '',
@@ -54,7 +54,7 @@ export const useHubspotMeetingScheduler = <
           field.name,
           field.type === 'number' ? 0 : field.type === 'enumeration' ? false : '',
         ])
-      ),
+      ) as CustomFormValues,
     lastName: userInfos?.lastName ?? '',
     slug: selectedMeeting.value?.slug ?? '',
     startTime: new Date(startDate ?? now).getTime(),

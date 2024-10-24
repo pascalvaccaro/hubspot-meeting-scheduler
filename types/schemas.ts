@@ -13,4 +13,9 @@ export const bookSchema = z.object({
   timezone: z.string().default('Europe/Paris'),
 })
 
-export type CreateBooking = typeof bookSchema._type
+export type CreateBooking<
+  CustomFormValues extends Record<string, string | number | boolean> =
+  Record<string, string | number | boolean>> = 
+Omit<typeof bookSchema._type, 'formFields'> & {
+  formFields: CustomFormValues
+}

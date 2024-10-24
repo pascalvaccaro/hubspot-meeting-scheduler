@@ -67,8 +67,8 @@ defineSlots<{
     handleChangeIdentity: (field: 'email' | 'firstName' | 'lastName', value: string) => void
   }): unknown
   'meeting-actions'(values: {
-    formValues: CreateBooking
-    handleSubmitMeeting: (v?: CreateBooking) => Promise<HubspotMeetingBookSuccess | null>
+    formValues: CreateBooking<CustomFormValues>
+    handleSubmitMeeting: (v?: CreateBooking<CustomFormValues>) => Promise<HubspotMeetingBookSuccess | null>
   }): unknown
   'meeting-selector'(values: {
     meeting?: HubspotMeetingLink | null
