@@ -103,6 +103,17 @@ export const useHubspotMeetingScheduler = <
         return { is: 'input', type: field.fieldType }
     }
   }
+  const getDisabledDates = (month: number, year: number) => {
+    const date = new Date(year, month, 1)
+    const available = [...Object.keys(availabilities.value)].map(Number)
+    const unavailable = []
+    while (date.getMonth() === month) {
+      if (!available.includes(date.getTime()))
+        unavailable.push(new Date(date))
+      date.setDate(date.getDate() + 1)
+    }
+    return unavailable
+  }
 
   const onMeetingSelect = (meeting: HubspotMeeting) => {
     selectedMeeting.value = meeting
@@ -150,6 +161,7 @@ export const useHubspotMeetingScheduler = <
     customFormFields,
     formValues,
     getCustomFieldAttrs,
+    getDisabledDates,
     meeting,
     meetingLinks,
     mutation,
